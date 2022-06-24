@@ -140,9 +140,9 @@
 
 (use-package hydra)
 
-(use-package projectile)
-
-(use-package magit)
+(use-package magit
+  :custom
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
 ;; Custom keybindings
 (general-define-key
@@ -160,6 +160,13 @@
  "C-c v" 'ivy-push-view
  "C-c V" 'ivy-pop-view)
 
+(defhydra hydra-text-scale (:timeout 4)
+  "scale text"
+  ("j" text-scale-increase "in")
+  ("k" text-scale-decrease "out")
+  ("f" nil "finished" :exit t))
+
 (phrmendes/leader-keys
   "tt" '(counsel-load-theme :which-key "choose theme")
-  "n" '(neotree-show :which-key "neotree"))
+  "n" '(neotree-show :which-key "neotree")
+  "ts" '(hydra-text-scale/body :which-key "scale text"))
