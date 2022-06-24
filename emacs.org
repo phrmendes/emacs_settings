@@ -1,3 +1,10 @@
+#+title: Emacs - init.el settings
+#+PROPERTY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
+
+* Package System Setup
+
+#+begin_src emacs-lisp
+
 ;; use-package settings ---------------------------------------
 
 (require 'package)
@@ -43,6 +50,12 @@
   (auto-package-update-maybe)
   (auto-package-update-at-time "22:00"))
 
+#+end_src
+
+* General Settings
+
+#+begin_src emacs-lisp
+
 ;; interface --------------------------------------------------
 
 (setq initial-buffer-choice "~/Sync/org/agenda.org") ; Initial screen
@@ -64,6 +77,12 @@
 ;; auto save files in the same path as it uses for sessions
 (setq auto-save-file-name-transforms
       `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+
+#+end_src
+
+* Minibuffer
+
+#+begin_src emacs-lisp
 
 (use-package ivy
   :diminish
@@ -110,6 +129,12 @@
 (use-package ivy-rich
   :init (ivy-rich-mode 1))
 
+#+end_src
+
+* Org-mode
+
+#+begin_src emacs-lisp
+
 (defun phrmendes/org-mode-setup ()
   (org-indent-mode)
   (visual-line-mode 1))
@@ -136,11 +161,23 @@
 (use-package visual-fill-column
   :hook (org-mode . phrmendes/org-mode-visual-fill))
 
+#+end_src
+
+* Git
+
+#+begin_src emacs-lisp
+
 (use-package magit
   :custom
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
 (use-package forge)
+
+#+end_src
+
+* Aesthetics 
+
+#+begin_src emacs-lisp
 
 (use-package all-the-icons)
 
@@ -165,6 +202,11 @@
 
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
+
+#+end_src
+* Keybindings
+
+#+begin_src emacs-lisp
 
 (use-package evil
   :init
@@ -218,3 +260,6 @@
   "tt" '(counsel-load-theme :which-key "choose theme")
   "n" '(neotree-show :which-key "neotree")
   "ts" '(hydra-text-scale/body :which-key "scale text"))
+
+#+end_src
+

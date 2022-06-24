@@ -4,3 +4,7 @@ elpa
 transient
 init.el~
 /projectile-bookmarks.eld
+/.last-package-update-day
+/emacs.org~
+/forge-database.sqlite
+/var/
