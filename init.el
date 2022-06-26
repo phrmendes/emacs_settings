@@ -1,5 +1,3 @@
-;; use-package settings ---------------------------------------
-
 (require 'package)
 
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
@@ -12,7 +10,7 @@
 
 ;; Initialize use-package on non-Linux platforms
 (unless (package-installed-p 'use-package)
-   (package-install 'use-package))
+  (package-install 'use-package))
 
 (require 'use-package)
 (setq use-package-always-ensure t)
@@ -32,8 +30,6 @@
  ;; If there is more than one, they won't work right.
  )
 
-;; auto-update packages ---------------------------------------
-
 (use-package auto-package-update
   :custom
   (auto-package-update-interval 7)
@@ -43,9 +39,12 @@
   (auto-package-update-maybe)
   (auto-package-update-at-time "22:00"))
 
-;; interface --------------------------------------------------
-
-(setq initial-buffer-choice "~/Sync/org/agenda.org") ; Initial screen
+(setq inhibit-splash-screen t) ; Remove initial GNU Emacs screen
+(setq initial-scratch-message "") ; Makes *scratch* empty
+(visual-line-mode) ; Wrap long lines
+(setq initial-buffer-choice (lambda ()
+                              (org-agenda-list)
+                              (get-buffer "*Org Agenda*"))) ; *Org Agenda* as initial buffer  
 (scroll-bar-mode -1) ; Disable visible scrollbar
 (tool-bar-mode -1) ; Disable the toolbar
 (tooltip-mode -1) ; Disable tooltips
@@ -55,11 +54,11 @@
 (set-face-attribute 'default nil :font "Fira Code Retina" :height 120) ; Font
 (column-number-mode)
 (global-display-line-numbers-mode t) ; Display line numbers
-
-;; keeping ~/.emacs.d clean -----------------------------------
+(setq org-src-tab-acts-natively t)
+(setq user-full-name "Pedro Mendes"
+      user-mail-address "phrmendes@tuta.io")
 
 (use-package no-littering)
-
 ;; no-littering doesn't set this by default so we must place
 ;; auto save files in the same path as it uses for sessions
 (setq auto-save-file-name-transforms
@@ -85,10 +84,10 @@
 
 (use-package counsel
   :bind (("M-x" . counsel-M-x)
-	 ("C-x b" . counsel-ibuffer)
-	 ("C-x C-f" . counsel-find-file)
-	 :map minibuffer-local-map
-	 ("C-r" . 'counsel-minibuffer-history)))
+         ("C-x b" . counsel-ibuffer)
+         ("C-x C-f" . counsel-find-file)
+         :map minibuffer-local-map
+         ("C-r" . 'counsel-minibuffer-history)))
 
 (use-package which-key
   :init (which-key-mode)
@@ -110,14 +109,21 @@
 (use-package ivy-rich
   :init (ivy-rich-mode 1))
 
-(defun phrmendes/org-mode-setup ()
-  (org-indent-mode)
-  (visual-line-mode 1))
+(defun phrmendes/org-mode-setup ()  :@home:
+       (org-indent-mode))
 
 (use-package org
   :hook (org-mode . phrmendes/org-mode-setup)
+  :commands (org-capture org-agenda)
   :config
-  (setq org-ellipsis " ▾"))
+  (setq org-ellipsis " ▾")
+  (setq org-log-done 'time)
+  (setq org-directory "~/Sync/org")
+  (setq org-agenda-files '("~/Sync/org/tasks.org"
+                           "~/Sync/org/agenda.org"))
+  (setq org-agenda-start-with-log-mode t)
+  (setq org-log-done 'time)
+  (setq org-log-into-drawer t))
 
 (use-package org-bullets
   :hook (org-mode . org-bullets-mode))
@@ -128,13 +134,32 @@
                           '(("^ *\\([-]\\) "
                              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
 
-(defun phrmendes/org-mode-visual-fill ()
-  (setq visual-fill-column-width 100
-        visual-fill-column-center-text t)
-  (visual-fill-column-mode 1))
+(setq org-todo-keywords
+      '((sequence "TODO(t)" "PROJ(p)" "NEXT(n)" "|" "DONE(d)")))
 
-(use-package visual-fill-column
-  :hook (org-mode . phrmendes/org-mode-visual-fill))
+(setq org-agenda-custom-commands
+      '(("d" "Dashboard"
+         ((agenda "" ((org-deadline-warning-days 7)))
+          (todo "NEXT"
+                ((org-agenda-overriding-header "Next Tasks")))))))
+
+(setq org-refile-targets
+      '(("archive.org") ("agenda.org")))
+
+(advice-add 'org-refile :after 'org-save-all-org-buffers)
+
+(setq org-tag-alist
+  '((:startgroup)
+     ; Put mutually exclusive tags here
+     (:endgroup)
+     ("@ufabc" . ?u)
+     ("@pessoal" . ?P)
+     ("teoriaJogos" . ?t)
+     ("estatBayes" . ?b)
+     ("econometria3" . ?e)
+     ("rcii" . ?r)
+     ("pch" . ?p)
+     ("consultas" . ?c)))
 
 (use-package magit
   :custom
@@ -166,6 +191,24 @@
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
 
+(let ((langs '("pt_BR" "en_US")))
+  (setq lang-ring (make-ring (length langs)))
+  (dolist (elem langs) (ring-insert lang-ring elem)))
+(let ((dics '("brazilian" "american-english")))
+  (setq dic-ring (make-ring (length dics)))
+  (dolist (elem dics) (ring-insert dic-ring elem)))
+
+(defun cycle-ispell-languages ()
+  (interactive)
+  (let (
+        (lang (ring-ref lang-ring -1))
+        (dic (ring-ref dic-ring -1))
+        )
+    (ring-insert lang-ring lang)
+    (ring-insert dic-ring dic)
+    (ispell-change-dictionary lang)
+    (setq ispell-complete-word-dict (concat "/usr/share/dict/" dic))))
+
 (use-package evil
   :init
   (setq evil-want-integration t)
@@ -195,7 +238,6 @@
 
 (general-define-key
  "<escape>" 'keyboard-escape-quit
- "C-M-b" 'keyboard-escape-quit
  "C-s" 'swiper-isearch
  "M-y" 'counsel-yank-pop
  "<f1> f" 'counsel-describe-function
@@ -206,7 +248,9 @@
  "<f2> j" 'counsel-set-variable
  "C-x b" 'ivy-switch-buffer
  "C-c v" 'ivy-push-view
- "C-c V" 'ivy-pop-view)
+ "C-c V" 'ivy-pop-view
+ "<f5>" 'cycle-ispell-languages
+ "<f6>" 'org-babel-tangle)
 
 (defhydra hydra-text-scale (:timeout 4)
   "scale text"
@@ -215,6 +259,14 @@
   ("f" nil "finished" :exit t))
 
 (phrmendes/leader-keys
-  "tt" '(counsel-load-theme :which-key "choose theme")
+  "b" '(ivy-switch-buffer :which-key "switch buffer")
+  "i" '(ibuffer :which-key "ibuffer-list-buffers")
+  "f" '(counsel-find-file :which-key "find file")
   "n" '(neotree-show :which-key "neotree")
-  "ts" '(hydra-text-scale/body :which-key "scale text"))
+  "ts" '(hydra-text-scale/body :which-key "scale text")
+  "oa" '(org-agenda :which-key "org-agenda")
+  "os" '(org-schedule :which-key "org-schedule")
+  "od" '(org-deadline :which-key "org-deadline")
+  "oc" '(org-time-stamp :which-key "org-time-stamp")
+  "of" '(org-refile :which-key "org-refile")
+  "ot" '(counsel-org-tag :which-key "org-tags"))
