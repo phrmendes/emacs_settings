@@ -62,7 +62,7 @@
 
   (setq inhibit-splash-screen t) ; Remove initial GNU Emacs screen
   (setq initial-scratch-message "") ; Makes *scratch* empty
-  (visual-line-mode) ; Wrap long lines
+  (global-visual-line-mode) ; Wrap long lines
   (setq initial-buffer-choice (lambda ()
                                 (org-agenda-list)
                                 (get-buffer "*Org Agenda*"))) ; *Org Agenda* as initial buffer  
@@ -78,6 +78,31 @@
   (setq org-src-tab-acts-natively t)
   (setq user-full-name "Pedro Mendes"
         user-mail-address "phrmendes@tuta.io")
+  (setq-default delete-by-moving-to-trash t)
+  (setq undo-limit 80000000
+        evil-want-fine-undo t
+        auto-save-default t
+        scroll-margin 2)
+
+  (use-package page-break-lines)
+  (global-page-break-lines-mode)
+
+  (let ((backup-dir "~/tmp/emacs/backups")
+        (auto-saves-dir "~/tmp/emacs/auto-saves/"))
+    (dolist (dir (list backup-dir auto-saves-dir))
+      (when (not (file-directory-p dir))
+        (make-directory dir t)))
+    (setq backup-directory-alist `(("." . , backup-dir))
+          auto-save-file-name-transforms `((".*" , auto-saves-dir t))
+          auto-save-list-file-prefix (concat auto-saves-dir ".saves-")
+          tramp-backup-directory-alist `((".*" . , backup-dir))
+          tramp-auto-save-directory auto-saves-dir))
+
+  (setq backup-by-copying t    ; Don't delink hardlinks                           
+        delete-old-versions t  ; Clean up the backups                             
+        version-control t      ; Use version numbers on backups,                  
+        kept-new-versions 5    ; keep some new versions                           
+        kept-old-versions 2)   ; and some old ones, too             
 
 #+end_src
 
@@ -189,11 +214,6 @@
             (todo "NEXT"
                   ((org-agenda-overriding-header "Next Tasks")))))))
 
-  (setq org-refile-targets
-        '(("archive.org") ("agenda.org")))
-
-  (advice-add 'org-refile :after 'org-save-all-org-buffers)
-
   (setq org-tag-alist
     '((:startgroup)
        ; Put mutually exclusive tags here
@@ -248,6 +268,15 @@
 
   (use-package rainbow-delimiters
     :hook (prog-mode . rainbow-delimiters-mode))
+
+  (use-package dashboard
+    :ensure t
+    :config
+    (dashboard-setup-startup-hook))
+
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-file-icons t)
+  (setq dashboard-week-agenda t)
 
 #+end_src
 * Spelling 
@@ -329,6 +358,7 @@
 
   (phrmendes/leader-keys
     "b" '(ivy-switch-buffer :which-key "switch buffer")
+    "d" '(dired :which-key "directory editor") 
     "i" '(ibuffer :which-key "ibuffer-list-buffers")
     "f" '(counsel-find-file :which-key "find file")
     "n" '(neotree-show :which-key "neotree")
@@ -337,7 +367,7 @@
     "os" '(org-schedule :which-key "org-schedule")
     "od" '(org-deadline :which-key "org-deadline")
     "oc" '(org-time-stamp :which-key "org-time-stamp")
-    "of" '(org-refile :which-key "org-refile")
+    "of" '(org-archive-subtree :which-key "org-archive")
     "ot" '(counsel-org-tag :which-key "org-tags"))
 
 #+end_src
