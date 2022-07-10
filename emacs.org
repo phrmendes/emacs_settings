@@ -99,7 +99,14 @@
         delete-old-versions t  ; Clean up the backups                             
         version-control t      ; Use version numbers on backups,                  
         kept-new-versions 5    ; keep some new versions                           
-        kept-old-versions 2)   ; and some old ones, too             
+        kept-old-versions 2)   ; and some old ones, too 
+
+  (dolist (mode '(org-mode-hook
+                  term-mode-hook
+                  shell-mode-hook
+                  treemacs-mode
+                  eshell-mode-hook))
+    (add-hook mode (lambda () (display-line-numbers-mode 0))))            
 
 #+end_src
 
@@ -274,7 +281,8 @@
     :init
     (progn
       (setq dashboard-items '((recents . 3)
-                              (agenda . 5)))
+                              (agenda . 3)
+                              (projects . 3)))
       (setq dashboard-center-content t)
       (setq dashboard-set-heading-icons t)
       (setq dashboard-set-file-icons t)
@@ -308,6 +316,70 @@
       (ring-insert dic-ring dic)
       (ispell-change-dictionary lang)
       (setq ispell-complete-word-dict (concat "/usr/share/dict/" dic))))
+
+#+end_src
+
+* Autocomplete
+** Company Mode
+
+#+begin_src emacs-lisp
+
+  (use-package company
+    :ensure t
+    :init
+    (add-hook 'after-init-hook 'global-company-mode)
+    :bind
+    (:map company-active-map
+          ("<tab>" . company-complete-selection))
+    (:map lsp-mode-map
+          ("<tab>" . company-indent-or-complete-common))
+    :config
+    (setq company-idle-delay 0
+          company-minimum-prefix-length 2
+          company-show-numbers 5))
+
+  (use-package company-box
+    :hook (company-mode . company-box-mode))
+
+#+end_src
+
+** lsp-mode
+
+#+begin_src emacs-lisp
+
+  (defun phrmendes/lsp-mode-setup ()
+    (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+    (lsp-headerline-breadcrumb-mode))
+
+  (use-package lsp-mode
+    :commands (lsp lsp-deferred)
+    :hook (lsp-mode . phrmendes/lsp-mode-setup)
+    :init
+    (setq lsp-keymap-prefix "C-c l")
+    :config
+    (lsp-enable-which-key-integration t))
+
+  (use-package lsp-pyright
+    :ensure t
+    :mode "\\.py\\'"
+    :hook (python-mode . (lambda ()
+                           (require 'lsp-pyright)
+                           (lsp))))
+
+  (use-package lsp-ui
+    :hook (lsp-mode . lsp-ui-mode)
+    :custom
+    (lsp-ui-doc-position 'bottom))
+
+  (use-package lsp-treemacs
+    :after lsp)
+
+  (use-package lsp-ivy)
+
+  (completion-at-point)
+
+  (use-package evil-nerd-commenter
+    :bind ("C-S-c" . evilnc-comment-or-uncomment-lines))
 
 #+end_src
 
@@ -369,7 +441,8 @@
     "d" '(dired :which-key "directory editor") 
     "i" '(ibuffer :which-key "ibuffer-list-buffers")
     "f" '(counsel-find-file :which-key "find file")
-    "n" '(neotree-show :which-key "neotree")
+    "tf" '(treemacs :which-key "treemacs")
+    "ts" '(lsp-treemacs-symbols :which-key "treemacs symbols")
     "sa" '(flyspell-mode :which-key "flyspell mode")
     "sc" '(flyspell-correct-word :which-key "flyspell correct word")
     "sb" '(flyspell-buffer :which-key "flyspell correct buffer")
@@ -382,19 +455,14 @@
     "of" '(org-archive-subtree :which-key "org-archive")
     "ot" '(counsel-org-tag :which-key "org-tags")
     "oe" '(org-edit-src-code :which-key "org-edit-src-code")
-    )
+    "ox" '(org-babel-execute-src-block :which-key "org-babel-exec-chunk")
+    "ls" '(lsp :which-key "start lsp")  
+    "lf" '(lsp-find-definition :which-key "lsp find definition")
+    "lr" '(lsp-find-references :which-key "lsp find references")
+    "le" '(lsp-rename :which-key "lsp rename")
+    "ld" '(flymake-show-diagnostics-buffer :which-key "diagnostic")
+    "lt" '(lsp-format-buffer :which-key "lsp format buffer")
+    "li" '(lsp-ivy-workspace-symbol :which-key "ivy symbol search"))
 
 #+end_src
-* Autocomplete
 
-#+begin_src emacs-lisp
-  (use-package company
-    :ensure t
-    :init
-    (add-hook 'after-init-hook 'global-company-mode)
-    :config
-    (setq company-idle-delay 0
-          company-minimum-prefix-length 2
-          company-show-numbers 5))
-
-#+end_src

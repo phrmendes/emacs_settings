@@ -78,7 +78,14 @@
       delete-old-versions t  ; Clean up the backups                             
       version-control t      ; Use version numbers on backups,                  
       kept-new-versions 5    ; keep some new versions                           
-      kept-old-versions 2)   ; and some old ones, too
+      kept-old-versions 2)   ; and some old ones, too 
+
+(dolist (mode '(org-mode-hook
+                term-mode-hook
+                shell-mode-hook
+                treemacs-mode
+                eshell-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 (use-package no-littering)
 ;; no-littering doesn't set this by default so we must place
@@ -122,7 +129,7 @@
   (counsel-describe-function-function #'helpful-callable)
   (counsel-describe-variable-function #'helpful-variable)
   :bind
-  ([remap describe-function] . counsel-describe-function)
+  ([remap describe-functon] . counsel-describe-function)
   ([remap describe-symbol] . helpful-symbol)
   ([remap describe-variable] . counsel-describe-variable)
   ([remap describe-command] . helpful-command)
@@ -180,17 +187,62 @@
 
 (advice-add 'save-buffer :after #'org-save-all-org-buffers) ; Auto-save buffers
 
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp . t)
+   (python . t)
+   (shell . t)
+   (R . t)
+   (sql . t)
+   (sqlite . t)
+   (latex . t)))
+
+(setq org-confirm-babel-evaluate nil)
+
+(require 'org-tempo)
+
+(setq org-structure-template-alist (delete '("s" . "src") org-structure-template-alist))
+(setq org-structure-template-alist (delete '("e" . "example") org-structure-template-alist))
+
+(add-to-list 'org-structure-template-alist '("e" . "scr emacs-lisp"))
+(add-to-list 'org-structure-template-alist '("s" . "src shell"))
+(add-to-list 'org-structure-template-alist '("p" . "src python :results output"))
+(add-to-list 'org-structure-template-alist '("r" . "src R :results output"))
+
+(defun phrmendes/org-babel-tangle-config ()
+  (when (string-equal (buffer-file-name)
+                      (expand-file-name "~/.emacs.d/emacs.org"))
+    (let ((org-confirm-babel-evaluate nil))
+      (org-babel-tangle))))
+
+(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'phrmendes/org-babel-tangle-config)))
+
 (use-package magit
   :custom
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
 (use-package forge)
 
-(use-package projectile)
+
+(use-package projectile
+  :diminish projectile-mode
+  :config (projectile-mode)
+  :custom ((projectile-completion-system 'ivy))
+  :bind-keymap
+  ("C-c p" . projectile-command-map)
+  :init
+  (when (file-directory-p "~/Projects/")
+    (setq projectile-project-search-path '("~/Projects/")))
+  (setq projectile-switch-project-action #'projectile-dired))
+
+(use-package counsel-projectile
+  :config (counsel-projectile-mode))
+
+(use-package forge)
 
 (use-package all-the-icons)
 
-(use-package neotree)
+(use-package treemacs)
 
 (use-package doom-themes
   :config
@@ -217,7 +269,8 @@
   :init
   (progn
     (setq dashboard-items '((recents . 3)
-                            (agenda . 5)))
+                            (agenda . 3)
+                            (projects . 3)))
     (setq dashboard-center-content t)
     (setq dashboard-set-heading-icons t)
     (setq dashboard-set-file-icons t)
@@ -246,6 +299,57 @@
     (ring-insert dic-ring dic)
     (ispell-change-dictionary lang)
     (setq ispell-complete-word-dict (concat "/usr/share/dict/" dic))))
+
+(use-package company
+  :ensure t
+  :init
+  (add-hook 'after-init-hook 'global-company-mode)
+  :bind
+  (:map company-active-map
+        ("<tab>" . company-complete-selection))
+  (:map lsp-mode-map
+        ("<tab>" . company-indent-or-complete-common))
+  :config
+  (setq company-idle-delay 0
+        company-minimum-prefix-length 2
+        company-show-numbers 5))
+
+(use-package company-box
+  :hook (company-mode . company-box-mode))
+
+(defun phrmendes/lsp-mode-setup ()
+  (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+  (lsp-headerline-breadcrumb-mode))
+
+(use-package lsp-mode
+  :commands (lsp lsp-deferred)
+  :hook (lsp-mode . phrmendes/lsp-mode-setup)
+  :init
+  (setq lsp-keymap-prefix "C-c l")
+  :config
+  (lsp-enable-which-key-integration t))
+
+(use-package lsp-pyright
+  :ensure t
+  :mode "\\.py\\'"
+  :hook (python-mode . (lambda ()
+                         (require 'lsp-pyright)
+                         (lsp))))
+
+(use-package lsp-ui
+  :hook (lsp-mode . lsp-ui-mode)
+  :custom
+  (lsp-ui-doc-position 'bottom))
+
+(use-package lsp-treemacs
+  :after lsp)
+
+(use-package lsp-ivy)
+
+(completion-at-point)
+
+(use-package evil-nerd-commenter
+  :bind ("C-S-c" . evilnc-comment-or-uncomment-lines))
 
 (use-package evil
   :init
@@ -301,7 +405,8 @@
   "d" '(dired :which-key "directory editor") 
   "i" '(ibuffer :which-key "ibuffer-list-buffers")
   "f" '(counsel-find-file :which-key "find file")
-  "n" '(neotree-show :which-key "neotree")
+  "tf" '(treemacs :which-key "treemacs")
+  "ts" '(lsp-treemacs-symbols :which-key "treemacs symbols")
   "sa" '(flyspell-mode :which-key "flyspell mode")
   "sc" '(flyspell-correct-word :which-key "flyspell correct word")
   "sb" '(flyspell-buffer :which-key "flyspell correct buffer")
@@ -314,13 +419,11 @@
   "of" '(org-archive-subtree :which-key "org-archive")
   "ot" '(counsel-org-tag :which-key "org-tags")
   "oe" '(org-edit-src-code :which-key "org-edit-src-code")
-  )
-
-(use-package company
-  :ensure t
-  :init
-  (add-hook 'after-init-hook 'global-company-mode)
-  :config
-  (setq company-idle-delay 0
-        company-minimum-prefix-length 2
-        company-show-numbers 5))
+  "ox" '(org-babel-execute-src-block :which-key "org-babel-exec-chunk")
+  "ls" '(lsp :which-key "start lsp")  
+  "lf" '(lsp-find-definition :which-key "lsp find definition")
+  "lr" '(lsp-find-references :which-key "lsp find references")
+  "le" '(lsp-rename :which-key "lsp rename")
+  "ld" '(flymake-show-diagnostics-buffer :which-key "diagnostic")
+  "lt" '(lsp-format-buffer :which-key "lsp format buffer")
+  "li" '(lsp-ivy-workspace-symbol :which-key "ivy symbol search"))
