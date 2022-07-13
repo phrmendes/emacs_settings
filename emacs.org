@@ -282,7 +282,8 @@
     (progn
       (setq dashboard-items '((recents . 3)
                               (agenda . 3)
-                              (projects . 3)))
+                              (projects . 3)
+                              (bookmarks . 3)))
       (setq dashboard-center-content t)
       (setq dashboard-set-heading-icons t)
       (setq dashboard-set-file-icons t)
@@ -290,9 +291,6 @@
       (setq dashboard-filter-agenda-entry 'dashboard-no-filter-agenda))
     :config
     (dashboard-setup-startup-hook))
-
-  (use-package page-break-lines)
-  (global-page-break-lines-mode)
 
 #+end_src
 * Spelling 

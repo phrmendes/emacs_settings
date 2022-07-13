@@ -129,7 +129,7 @@
   (counsel-describe-function-function #'helpful-callable)
   (counsel-describe-variable-function #'helpful-variable)
   :bind
-  ([remap describe-functon] . counsel-describe-function)
+  ([remap describe-function] . counsel-describe-function)
   ([remap describe-symbol] . helpful-symbol)
   ([remap describe-variable] . counsel-describe-variable)
   ([remap describe-command] . helpful-command)
@@ -187,62 +187,17 @@
 
 (advice-add 'save-buffer :after #'org-save-all-org-buffers) ; Auto-save buffers
 
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((emacs-lisp . t)
-   (python . t)
-   (shell . t)
-   (R . t)
-   (sql . t)
-   (sqlite . t)
-   (latex . t)))
-
-(setq org-confirm-babel-evaluate nil)
-
-(require 'org-tempo)
-
-(setq org-structure-template-alist (delete '("s" . "src") org-structure-template-alist))
-(setq org-structure-template-alist (delete '("e" . "example") org-structure-template-alist))
-
-(add-to-list 'org-structure-template-alist '("e" . "scr emacs-lisp"))
-(add-to-list 'org-structure-template-alist '("s" . "src shell"))
-(add-to-list 'org-structure-template-alist '("p" . "src python :results output"))
-(add-to-list 'org-structure-template-alist '("r" . "src R :results output"))
-
-(defun phrmendes/org-babel-tangle-config ()
-  (when (string-equal (buffer-file-name)
-                      (expand-file-name "~/.emacs.d/emacs.org"))
-    (let ((org-confirm-babel-evaluate nil))
-      (org-babel-tangle))))
-
-(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'phrmendes/org-babel-tangle-config)))
-
 (use-package magit
   :custom
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
 (use-package forge)
 
-
-(use-package projectile
-  :diminish projectile-mode
-  :config (projectile-mode)
-  :custom ((projectile-completion-system 'ivy))
-  :bind-keymap
-  ("C-c p" . projectile-command-map)
-  :init
-  (when (file-directory-p "~/Projects/")
-    (setq projectile-project-search-path '("~/Projects/")))
-  (setq projectile-switch-project-action #'projectile-dired))
-
-(use-package counsel-projectile
-  :config (counsel-projectile-mode))
-
-(use-package forge)
+(use-package projectile)
 
 (use-package all-the-icons)
 
-(use-package treemacs)
+(use-package neotree)
 
 (use-package doom-themes
   :config
@@ -270,7 +225,8 @@
   (progn
     (setq dashboard-items '((recents . 3)
                             (agenda . 3)
-                            (projects . 3)))
+                            (projects . 3)
+                            (bookmarks . 3)))
     (setq dashboard-center-content t)
     (setq dashboard-set-heading-icons t)
     (setq dashboard-set-file-icons t)
@@ -278,9 +234,6 @@
     (setq dashboard-filter-agenda-entry 'dashboard-no-filter-agenda))
   :config
   (dashboard-setup-startup-hook))
-
-(use-package page-break-lines)
-(global-page-break-lines-mode)
 
 (let ((langs '("pt_BR" "en_US")))
   (setq lang-ring (make-ring (length langs)))
