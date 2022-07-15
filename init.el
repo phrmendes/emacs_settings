@@ -1,3 +1,5 @@
+(setq gc-cons-threshold (* 50 1000 1000))
+
 (require 'package)
 
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
@@ -119,12 +121,14 @@
          ("C-r" . 'counsel-minibuffer-history)))
 
 (use-package which-key
-  :init (which-key-mode)
+  :defer 0
   :diminish which-key-mode
   :config
-  (setq which-key-idle-delay 0.3))
+  (which-key-mode)
+  (setq which-key-idle-delay 0.1))
 
 (use-package helpful
+  :commands (helpful-callable helpful-variable helpful-command helpful-key)
   :custom
   (counsel-describe-function-function #'helpful-callable)
   (counsel-describe-variable-function #'helpful-variable)
@@ -136,7 +140,16 @@
   ([remap describe-key] . helpful-key))
 
 (use-package ivy-rich
+  :after ivy
   :init (ivy-rich-mode 1))
+
+(use-package ivy-prescient
+  :after counsel
+  :custom
+  (ivy-prescient-enable-filtering nil)
+  :config
+  (prescient-persist-mode 1)
+  (ivy-prescient-mode 1))
 
 (defun phrmendes/org-mode-setup ()  :@home:
        (org-indent-mode))
@@ -157,14 +170,12 @@
 (use-package org-bullets
   :hook (org-mode . org-bullets-mode))
 
-(defun phrmendes/org-font-setup ()
-  (font-lock-add-keywords 'org-mode
-                          '(("^ *\\([-]\\) "
-                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))
-                            ("\\(->\\) "
-                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "→")))))))
-
-(phrmendes/org-font-setup)
+(with-eval-after-load 'org
+  (org-babel-do-load-languages
+      'org-babel-load-languages
+      '((emacs-lisp . t)
+      (python . t)))
+  (push '("conf-unix" . conf-unix) org-src-lang-modes))
 
 (setq org-todo-keywords
       '((sequence "TODO(t)" "PROJ(p)" "NEXT(n)" "|" "DONE(d)")))
@@ -190,10 +201,9 @@
 (advice-add 'save-buffer :after #'org-save-all-org-buffers) ; Auto-save buffers
 
 (use-package magit
+  :commands (magit magit-status)
   :custom
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
-
-(use-package forge)
 
 (use-package projectile
   :diminish projectile-mode
@@ -211,9 +221,12 @@
   :after projectile
   :config (counsel-projectile-mode))
 
+(use-package forge
+  :after magit)
+
 (use-package all-the-icons)
 
-(use-package neotree)
+(use-package treemacs)
 
 (use-package doom-themes
   :config
@@ -236,7 +249,6 @@
   :hook (prog-mode . rainbow-delimiters-mode))
 
 (use-package dashboard
-  :ensure t
   :init
   (progn
     (setq dashboard-items '((recents . 3)
@@ -270,7 +282,6 @@
     (setq ispell-complete-word-dict (concat "/usr/share/dict/" dic))))
 
 (use-package company
-  :ensure t
   :init
   (add-hook 'after-init-hook 'global-company-mode)
   :bind
@@ -298,10 +309,10 @@
   :config
   (lsp-enable-which-key-integration t))
 
-(use-package dap-mode)
+(use-package dap-mode
+  :commands (dap-debug))
 
 (use-package python-mode
-  :ensure t
   :hook (python-mode . lsp-deferred)
   :custom
   (python-shell-interpreter "python3")
@@ -321,9 +332,10 @@
   (lsp-ui-doc-position 'bottom))
 
 (use-package lsp-treemacs
-  :after lsp)
+  :after lsp-mode)
 
-(use-package lsp-ivy)
+(use-package lsp-ivy
+  :after lsp-mode)
 
 (completion-at-point)
 
@@ -336,28 +348,6 @@
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *") 
   (setq vterm-shell "zsh")
   (setq vterm-max-scrollback 10000))
-
-(use-package dired
-  :ensure nil
-  :commands (dired dired-jump)
-  :bind (("C-x C-j" . dired-jump))
-  :custom ((dired-listing-switches "-agho --group-directories-first"))
-  :config
-  (evil-collection-define-key 'normal 'dired-mode-map
-    "h" 'dired-single-up-directory
-    "l" 'dired-single-buffer))
-
-(use-package dired-single
-  :commands (dired dired-jump))
-
-(use-package all-the-icons-dired
-  :hook (dired-mode . all-the-icons-dired-mode))
-
-(use-package dired-hide-dotfiles
-  :hook (dired-mode . dired-hide-dotfiles-mode)
-  :config
-  (evil-collection-define-key 'normal 'dired-mode-map
-    "H" 'dired-hide-dotfiles-mode))
 
 (use-package evil
   :init
@@ -383,13 +373,15 @@
 (drag-stuff-define-keys)
 
 (use-package general
+  :after evil
   :config
   (general-create-definer phrmendes/leader-keys
     :keymaps '(normal insert visual emacs dired)
     :prefix "SPC"
     :global-prefix "C-SPC"))
 
-(use-package hydra)
+(use-package hydra
+  :defer t)
 
 (general-define-key
  "<escape>" 'keyboard-escape-quit
@@ -444,3 +436,27 @@
   "ld" '(flymake-show-diagnostics-buffer :which-key "diagnostic")
   "lt" '(lsp-format-buffer :which-key "lsp format buffer")
   "li" '(lsp-ivy-workspace-symbol :which-key "ivy symbol search"))
+
+(use-package dired
+  :ensure nil
+  :commands (dired dired-jump)
+  :bind (("C-x C-j" . dired-jump))
+  :custom ((dired-listing-switches "-agho --group-directories-first"))
+  :config
+  (evil-collection-define-key 'normal 'dired-mode-map
+    "h" 'dired-single-up-directory
+    "l" 'dired-single-buffer))
+
+(use-package dired-single
+  :commands (dired dired-jump))
+
+(use-package all-the-icons-dired
+  :hook (dired-mode . all-the-icons-dired-mode))
+
+(use-package dired-hide-dotfiles
+  :hook (dired-mode . dired-hide-dotfiles-mode)
+  :config
+  (evil-collection-define-key 'normal 'dired-mode-map
+    "H" 'dired-hide-dotfiles-mode))
+
+(setq gc-cons-threshold (* 2 1000 1000))
