@@ -83,9 +83,9 @@
 (dolist (mode '(org-mode-hook
                 term-mode-hook
                 shell-mode-hook
-                treemacs-mode
-                eshell-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+                treemacs-mode-hook
+                vterm-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode -1))))
 
 (use-package no-littering)
 ;; no-littering doesn't set this by default so we must place
@@ -158,10 +158,13 @@
   :hook (org-mode . org-bullets-mode))
 
 (defun phrmendes/org-font-setup ()
-  ;; Replace list hyphen with dot
   (font-lock-add-keywords 'org-mode
                           '(("^ *\\([-]\\) "
-                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
+                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))
+                            ("\\(->\\) "
+                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "→")))))))
+
+(phrmendes/org-font-setup)
 
 (setq org-todo-keywords
       '((sequence "TODO(t)" "PROJ(p)" "NEXT(n)" "|" "DONE(d)")))
@@ -179,7 +182,6 @@
      ("@ufabc" . ?u)
      ("@pessoal" . ?P)
      ("teoriaJogos" . ?t)
-     ("estatBayes" . ?b)
      ("econometria3" . ?e)
      ("rcii" . ?r)
      ("pch" . ?p)
@@ -193,7 +195,21 @@
 
 (use-package forge)
 
-(use-package projectile)
+(use-package projectile
+  :diminish projectile-mode
+  :config (projectile-mode)
+  :custom ((projectile-completion-system 'ivy))
+  :bind-keymap
+  ("C-c p" . projectile-command-map)
+  :init
+  ;; NOTE: Set this to the folder where you keep your Git repos!
+  (when (file-directory-p "~/Projects/")
+    (setq projectile-project-search-path '("~/Projects/")))
+  (setq projectile-switch-project-action #'projectile-dired))
+
+(use-package counsel-projectile
+  :after projectile
+  :config (counsel-projectile-mode))
 
 (use-package all-the-icons)
 
@@ -282,12 +298,22 @@
   :config
   (lsp-enable-which-key-integration t))
 
-(use-package lsp-pyright
+(use-package dap-mode)
+
+(use-package python-mode
   :ensure t
-  :mode "\\.py\\'"
-  :hook (python-mode . (lambda ()
-                         (require 'lsp-pyright)
-                         (lsp))))
+  :hook (python-mode . lsp-deferred)
+  :custom
+  (python-shell-interpreter "python3")
+  (dap-python-executable "python3")
+  (dap-python-debugger 'debugpy)
+  :config
+  (require 'dap-python))
+
+(use-package pyvenv
+  :after python-mode
+  :config
+  (pyvenv-mode 0))
 
 (use-package lsp-ui
   :hook (lsp-mode . lsp-ui-mode)
@@ -303,6 +329,35 @@
 
 (use-package evil-nerd-commenter
   :bind ("C-S-c" . evilnc-comment-or-uncomment-lines))
+
+(use-package vterm
+  :commands vterm
+  :config
+  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *") 
+  (setq vterm-shell "zsh")
+  (setq vterm-max-scrollback 10000))
+
+(use-package dired
+  :ensure nil
+  :commands (dired dired-jump)
+  :bind (("C-x C-j" . dired-jump))
+  :custom ((dired-listing-switches "-agho --group-directories-first"))
+  :config
+  (evil-collection-define-key 'normal 'dired-mode-map
+    "h" 'dired-single-up-directory
+    "l" 'dired-single-buffer))
+
+(use-package dired-single
+  :commands (dired dired-jump))
+
+(use-package all-the-icons-dired
+  :hook (dired-mode . all-the-icons-dired-mode))
+
+(use-package dired-hide-dotfiles
+  :hook (dired-mode . dired-hide-dotfiles-mode)
+  :config
+  (evil-collection-define-key 'normal 'dired-mode-map
+    "H" 'dired-hide-dotfiles-mode))
 
 (use-package evil
   :init
@@ -322,10 +377,15 @@
   :config
   (evil-collection-init))
 
+(use-package drag-stuff)
+
+(drag-stuff-global-mode 1)
+(drag-stuff-define-keys)
+
 (use-package general
   :config
   (general-create-definer phrmendes/leader-keys
-    :keymaps '(normal insert visual emacs)
+    :keymaps '(normal insert visual emacs dired)
     :prefix "SPC"
     :global-prefix "C-SPC"))
 
@@ -355,9 +415,13 @@
 
 (phrmendes/leader-keys
   "b" '(ivy-switch-buffer :which-key "switch buffer")
-  "d" '(dired :which-key "directory editor") 
   "i" '(ibuffer :which-key "ibuffer-list-buffers")
   "f" '(counsel-find-file :which-key "find file")
+  "c" '(org-insert-structure-template :which-key "templates")
+  "k" '(kill-buffer :which-key "kill buffer")
+  "g" '(magit :which-key "magit")
+  "v" '(vterm :which-key "vterm")
+  "d" '(dired :which-key "directory editor")
   "tf" '(treemacs :which-key "treemacs")
   "ts" '(lsp-treemacs-symbols :which-key "treemacs symbols")
   "sa" '(flyspell-mode :which-key "flyspell mode")
