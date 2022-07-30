@@ -355,28 +355,6 @@
 #+end_src
 
 * Autocomplete
-** Company Mode
-
-#+begin_src emacs-lisp
-
-  (use-package company
-    :init
-    (add-hook 'after-init-hook 'global-company-mode)
-    :bind
-    (:map company-active-map
-          ("<tab>" . company-complete-selection))
-    (:map lsp-mode-map
-          ("<tab>" . company-indent-or-complete-common))
-    :config
-    (setq company-idle-delay 0
-          company-minimum-prefix-length 2
-          company-show-numbers 5))
-
-  (use-package company-box
-    :hook (company-mode . company-box-mode))
-
-#+end_src
-
 ** lsp-mode
 
 #+begin_src emacs-lisp
@@ -425,6 +403,28 @@
 
   (use-package evil-nerd-commenter
     :bind ("C-S-c" . evilnc-comment-or-uncomment-lines))
+
+#+end_src
+
+** Company Mode
+
+#+begin_src emacs-lisp
+
+  (use-package company
+    :init
+    (add-hook 'after-init-hook 'global-company-mode)
+    :bind
+    (:map company-active-map
+          ("<tab>" . company-complete-selection))
+    ;; (:map lsp-mode-map
+    ;;       ("<tab>" . company-indent-or-complete-common))
+    :config
+    (setq company-idle-delay 0
+          company-minimum-prefix-length 2
+          company-show-numbers 5))
+
+  (use-package company-box
+    :hook (company-mode . company-box-mode))
 
 #+end_src
 

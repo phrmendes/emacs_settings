@@ -281,22 +281,6 @@
     (ispell-change-dictionary lang)
     (setq ispell-complete-word-dict (concat "/usr/share/dict/" dic))))
 
-(use-package company
-  :init
-  (add-hook 'after-init-hook 'global-company-mode)
-  :bind
-  (:map company-active-map
-        ("<tab>" . company-complete-selection))
-  (:map lsp-mode-map
-        ("<tab>" . company-indent-or-complete-common))
-  :config
-  (setq company-idle-delay 0
-        company-minimum-prefix-length 2
-        company-show-numbers 5))
-
-(use-package company-box
-  :hook (company-mode . company-box-mode))
-
 (defun phrmendes/lsp-mode-setup ()
   (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
   (lsp-headerline-breadcrumb-mode))
@@ -341,6 +325,22 @@
 
 (use-package evil-nerd-commenter
   :bind ("C-S-c" . evilnc-comment-or-uncomment-lines))
+
+(use-package company
+  :init
+  (add-hook 'after-init-hook 'global-company-mode)
+  :bind
+  (:map company-active-map
+        ("<tab>" . company-complete-selection))
+  ;; (:map lsp-mode-map
+  ;;       ("<tab>" . company-indent-or-complete-common))
+  :config
+  (setq company-idle-delay 0
+        company-minimum-prefix-length 2
+        company-show-numbers 5))
+
+(use-package company-box
+  :hook (company-mode . company-box-mode))
 
 (use-package vterm
   :commands vterm
